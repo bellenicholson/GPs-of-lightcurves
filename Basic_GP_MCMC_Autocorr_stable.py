@@ -17,7 +17,7 @@ def get_emcee_results(samples,ndim,lam=True):
     for i in range(ndim):
         samp = samples[:,i]
         if i == 1: samp = np.exp(samp)
-        if i == 3: samp = np.exp(samp)
+        # if i == 3: samp = np.exp(samp)
         if i == 4: 
             if lam:
                 samp =  np.sqrt(np.exp(samp)/2.)
@@ -140,15 +140,22 @@ if __name__ == '__main__':
     state = sampler.get_last_sample()
     bestvals = state.coords[state.log_prob==max(state.log_prob)]
     pos2 = bestvals + np.random.randn(nwalkers, ndim)*1e-4
+    
+    # print("Running burn-in 3...")
+    sampler.reset()
+    sampler.run_mcmc(pos2, burn_steps)
+    state = sampler.get_last_sample()
+    bestvals2 = state.coords[state.log_prob==max(state.log_prob)]
+    pos3 = bestvals2 + np.random.randn(nwalkers, ndim)*1e-4
 
 
-    max_steps = 8000
+    max_steps = 10000
     index = 0
     autocorr = np.empty(max_steps)
     flag=1
     old_tau = np.inf
 
-    for sample in sampler.sample(pos2, iterations=max_steps, progress=True):
+    for sample in sampler.sample(pos3, iterations=max_steps, progress=True):
         # Only check convergence every 100 steps
         if sampler.iteration % 100:
             continue
@@ -249,4 +256,4 @@ if __name__ == '__main__':
     results = get_emcee_results(flat_samples,ndim,lam=False)
 
     np.savetxt(filename+'_results.txt', np.array([num,flag] + results), fmt='%7.4e',
-               header = 'num flag mean mean_uper mean_loer amp amp_uper amp_loer gamma1 gamma1_uper gamma1_loer period period_uper period_loer metric metirc_uper metric_loer',comments='')
+               header = 'num flag mean mean_uper mean_loer amp amp_uper amp_loer gamma1 gamma1_uper gamma1_loer logP logP_uper logP_loer metric metirc_uper metric_loer',comments='')
