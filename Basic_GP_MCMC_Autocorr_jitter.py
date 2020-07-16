@@ -98,7 +98,7 @@ if __name__ == '__main__':
     # time, flux, fluxerr = np.loadtxt('./LocalTests/BasicGP_lightcurve.txt').T
     
     lightcurve = np.loadtxt(lightdir+lightname).T
-    time, flux, fluxerr = lightcurve[0][::50], lightcurve[1][::10], lightcurve[2][::10]
+    time, flux, fluxerr = lightcurve[0][::10], lightcurve[1][::10], lightcurve[2][::10]
 
     filename = outdir+lightname[:-4]
     
