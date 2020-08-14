@@ -156,7 +156,7 @@ if __name__ == '__main__':
     pos3 = bestvals2 + np.random.randn(nwalkers, ndim)*1e-4
 
 
-    max_steps = 20000
+    max_steps = 10000
     index = 0
     autocorr = np.empty(max_steps)
     flag=1
