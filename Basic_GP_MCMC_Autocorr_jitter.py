@@ -47,19 +47,19 @@ def walker_diagnostic_plot(samples,lnP,ndim):
 def uniform_lnprior(parvec):
     lnjit, men,logA,gamma, logP, logm = parvec
     
-    if lnjit < -15:
+    if lnjit < -20:
         return -np.inf
-    if abs(men) > 15:
+    elif abs(men) > 15:
         return -np.inf
-    if abs(logA) > 30:
+    elif abs(logA) > 30:
         return -np.inf
-    if gamma < 0:
+    elif gamma < 0:
         return -np.inf
-    if gamma > 15:
+    elif gamma > 15:
         return -np.inf
-    if abs(logP) > 15:
+    elif abs(logP) > 15:
         return -np.inf
-    if abs(logm) > 30:
+    elif abs(logm) > 30:
         return -np.inf
     
     return 0
@@ -103,8 +103,8 @@ if __name__ == '__main__':
     filename = outdir+lightname[:-4]
     
     # input_pars = np.loadtxt(lightdir+parfile)
-    lnjit = np.log(abs(np.mean(fluxerr)))
-    num,mean,amp,gamma,logPeriod,metric = np.loadtxt(lightdir+parfile)
+    # lnjit = np.log(abs(np.mean(fluxerr)))
+    num,lnjit,mean,amp,gamma,logPeriod,metric = np.loadtxt(lightdir+parfile)
     input_gppars = [mean,amp,gamma,logPeriod,metric]
 
     k = input_gppars[1] * george.kernels.ExpSine2Kernel(gamma=input_gppars[2], log_period=input_gppars[3]) * george.kernels.ExpSquaredKernel(input_gppars[4])
