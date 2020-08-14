@@ -156,7 +156,7 @@ if __name__ == '__main__':
     pos3 = bestvals2 + np.random.randn(nwalkers, ndim)*1e-4
 
 
-    max_steps = 10000
+    max_steps = 20000
     index = 0
     autocorr = np.empty(max_steps)
     flag=1
@@ -227,12 +227,12 @@ if __name__ == '__main__':
     lnp = sampler.get_log_prob(discard=burnin,thin=thin)
 
     corner.corner(flat_samples, labels=['Jitter','Mean',r'$\log A$',r'$\Gamma_1$',r'$\log P$',r'$\log m$']);
-    p.savefig(filename+'_jitter_corner.png')
+    p.savefig(filename+'_corner.png')
     p.close()
 
     # print(np.shape(samples))
     walker_diagnostic_plot(samples,lnp,ndim)
-    p.savefig(filename+'_jitter_walkers.png')
+    p.savefig(filename+'_walkers.png')
     p.close()
 
 
@@ -262,5 +262,5 @@ if __name__ == '__main__':
 
     results = get_emcee_results(flat_samples,ndim,lam=False)
 
-    np.savetxt(filename+'_jitter_results.txt', np.array([num,flag] + results), fmt='%7.4e',
+    np.savetxt(filename+'_results.txt', np.array([num,flag] + results), fmt='%7.4e',
                header = 'num flag lnjit lnjit_uper lnjit_loer mean mean_uper mean_loer amp amp_uper amp_loer gamma1 gamma1_uper gamma1_loer logP logP_uper logP_loer metric metirc_uper metric_loer',comments='')
