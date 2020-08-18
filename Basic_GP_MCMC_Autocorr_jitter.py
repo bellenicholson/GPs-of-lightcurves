@@ -65,7 +65,7 @@ def uniform_lnprior(parvec):
     return 0
     
 
-def log_like_prior(parvec,gp,time,flux):
+def log_like_prior(parvec,gp,time,flux,fluxerr):
     lpr = uniform_lnprior(parvec)
     if not np.isfinite(lpr):
         # print('here prior')
@@ -73,7 +73,7 @@ def log_like_prior(parvec,gp,time,flux):
     jitter, param = parvec[0],parvec[1:]
     gp.set_parameter_vector(param)
     try:
-        gp.compute(time,np.exp(jitter))
+        gp.compute(time,np.sqrt(fluxerr**2+np.exp(lnjit)**2))
 
     except:
         # print('here compute')
@@ -87,8 +87,8 @@ def log_like_prior(parvec,gp,time,flux):
 
     return loglike + lpr
 
-def neg_log_like_prior(parvec,gp,time,flux):
-    return -log_like_prior(parvec,gp,time,flux)
+def neg_log_like_prior(parvec,gp,time,flux,fluxerr):
+    return -log_like_prior(parvec,gp,time,flux,fluxerr)
 
 
 if __name__ == '__main__':
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     gpinput_pars = gp.get_parameter_vector()
 
-    gp.compute(time)
+    gp.compute(time, np.sqrt(fluxerr**2+np.exp(lnjit)**2))
     
     # print(gpinput_pars)
     
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     
     # print(input_pars)
         
-    min_pars = minimize(neg_log_like_prior,input_pars,args=(gp,time,flux))
+    min_pars = minimize(neg_log_like_prior,input_pars,args=(gp,time,flux,fluxerr))
     # print(min_pars.x)
  
 
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     # backend = emcee.backends.HDFBackend(filename+'_run19.h5')
     # backend.reset(nwalkers, ndim)
 
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_like_prior, args=[gp,time,flux])#,backend=backend)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_like_prior, args=[gp,time,flux,fluxerr])#,backend=backend)
 
     # sampler.run_mcmc(pos,800)
 
