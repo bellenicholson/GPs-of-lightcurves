@@ -45,9 +45,9 @@ def walker_diagnostic_plot(samples,lnP,ndim):
     axes[-1].set_xlabel('steps');
 
 def uniform_lnprior(parvec):
-    lnjit, men,logA,gamma, logP, logm = parvec
+    men,lnjit, logA,gamma, logP, logm = parvec
     
-    if lnjit < -20:
+    if abs(lnjit) > 20:
         return -np.inf
     elif abs(men) > 15:
         return -np.inf
@@ -70,10 +70,10 @@ def log_like_prior(parvec,gp,time,flux,fluxerr):
     if not np.isfinite(lpr):
         # print('here prior')
         return -np.inf
-    jitter, param = parvec[0],parvec[1:]
-    gp.set_parameter_vector(param)
+
+    gp.set_parameter_vector(parvec)
     try:
-        gp.compute(time,np.sqrt(fluxerr**2+np.exp(lnjit)**2))
+        gp.compute(time,fluxerr)
 
     except:
         # print('here compute')
@@ -98,32 +98,33 @@ if __name__ == '__main__':
     # time, flux, fluxerr = np.loadtxt('./LocalTests/BasicGP_lightcurve.txt').T
     
     lightcurve = np.loadtxt(lightdir+lightname).T
-    time, flux, fluxerr = lightcurve[0][::10], lightcurve[1][::10], lightcurve[2][::10]
+    time, flux, fluxerr = lightcurve[0][::50], lightcurve[1][::50], lightcurve[2][::50]
 
     filename = outdir+lightname[:-4]
     
     # input_pars = np.loadtxt(lightdir+parfile)
     # lnjit = np.log(abs(np.mean(fluxerr)))
-    num,lnjit,mean,amp,gamma,logPeriod,metric = np.loadtxt(lightdir+parfile)
-    input_gppars = [mean,amp,gamma,logPeriod,metric]
+    num,mean,lnjit,amp,gamma,logPeriod,metric = np.loadtxt(lightdir+parfile)
+    input_gppars = [mean,lnjit,amp,gamma,logPeriod,metric]
 
-    k = input_gppars[1] * george.kernels.ExpSine2Kernel(gamma=input_gppars[2], log_period=input_gppars[3]) * george.kernels.ExpSquaredKernel(input_gppars[4])
-    gp = george.GP(k,mean = input_gppars[0], fit_mean =True)
+    k = input_gppars[2] * george.kernels.ExpSine2Kernel(gamma=input_gppars[3], log_period=input_gppars[4]) * george.kernels.ExpSquaredKernel(input_gppars[5])
+    gp = george.GP(k,mean = input_gppars[0], fit_mean =True, white_noise=input_gppars[1], fit_white_noise=True)
 
     gpinput_pars = gp.get_parameter_vector()
 
-    gp.compute(time, np.sqrt(fluxerr**2+np.exp(lnjit)**2))
+    gp.compute(time, fluxerr)
+
+    print(input_gppars)    
+    print(gpinput_pars)
     
-    # print(gpinput_pars)
     
+    # input_pars = [lnjit, *gpinput_pars] 
     
-    input_pars = [lnjit, *gpinput_pars]
-    
-    # print(input_pars)
+
         
-    min_pars = minimize(neg_log_like_prior,input_pars,args=(gp,time,flux,fluxerr))
-    # print(min_pars.x)
- 
+    min_pars = minimize(neg_log_like_prior,gpinput_pars,args=(gp,time,flux,fluxerr))
+    print('minimize pars', min_pars.x)
+  
 
         #
     ndim, nwalkers = len(min_pars.x), 80
@@ -222,11 +223,12 @@ if __name__ == '__main__':
 
     # fatsamples = sampler.get_chain(discard=burnin)
     # print(np.shape(fatsamples))
+    
     flat_samples = sampler.get_chain(discard=burnin, thin=thin, flat=True)
     samples = sampler.get_chain(discard=burnin,thin=thin)
     lnp = sampler.get_log_prob(discard=burnin,thin=thin)
 
-    corner.corner(flat_samples, labels=['Jitter','Mean',r'$\log A$',r'$\Gamma_1$',r'$\log P$',r'$\log m$']);
+    corner.corner(flat_samples, labels=['Mean','Jitter',r'$\log A$',r'$\Gamma_1$',r'$\log P$',r'$\log m$']);
     p.savefig(filename+'_corner.png')
     p.close()
 
@@ -240,8 +242,8 @@ if __name__ == '__main__':
     # walker_diagnostic_plot(samples2,lnp2,ndim)
     # p.savefig(filename[:-4]+'_run6_walkers2.png')
     # p.close()
-
-
+    #
+    #
     #
     # try:
     #     tau = sampler.get_autocorr_time()
@@ -249,12 +251,12 @@ if __name__ == '__main__':
     # except:
     #     burnin = 200
     #     print('no autocorr')
-
+    #
     #
     # samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
-
-
-
+    #
+    #
+    #
     # corner.corner(samples2, labels=['Mean',r'$\log A$',r'$\Gamma_1$',r'$\log P$',r'$\log m$']);
     # p.savefig(filename[:-4]+'_run6_corner2.png')
     # p.close()
@@ -263,4 +265,4 @@ if __name__ == '__main__':
     results = get_emcee_results(flat_samples,ndim,lam=False)
 
     np.savetxt(filename+'_results.txt', np.array([num,flag] + results), fmt='%7.4e',
-               header = 'num flag lnjit lnjit_uper lnjit_loer mean mean_uper mean_loer amp amp_uper amp_loer gamma1 gamma1_uper gamma1_loer logP logP_uper logP_loer metric metirc_uper metric_loer',comments='')
+               header = 'num flag mean mean_uper mean_loer lnjit lnjit_uper lnjit_loer amp amp_uper amp_loer gamma1 gamma1_uper gamma1_loer logP logP_uper logP_loer metric metirc_uper metric_loer',comments='')
