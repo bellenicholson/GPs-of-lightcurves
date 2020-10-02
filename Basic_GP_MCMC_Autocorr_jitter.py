@@ -44,9 +44,10 @@ def walker_diagnostic_plot(samples,lnP,ndim):
         axes[i+1].set_ylabel(labels[i])
     axes[-1].set_xlabel('steps');
 
-def uniform_lnprior(parvec):
+def uniform_lnprior(parvec,time):
     men,lnjit, logA,gamma, logP, logm = parvec
-    
+    dt = time[1]-time[0]
+    T = time[-1]-time[0]
     if abs(lnjit) > 20:
         return -np.inf
     elif abs(men) > 15:
@@ -57,8 +58,10 @@ def uniform_lnprior(parvec):
         return -np.inf
     elif gamma > 15:
         return -np.inf
-    elif abs(logP) > 15:
+    elif logP > np.log(T):
         return -np.inf
+    elif logP < np.log(2*dt):
+        return -np.inf    
     elif abs(logm) > 30:
         return -np.inf
     
@@ -66,7 +69,7 @@ def uniform_lnprior(parvec):
     
 
 def log_like_prior(parvec,gp,time,flux,fluxerr):
-    lpr = uniform_lnprior(parvec)
+    lpr = uniform_lnprior(parvec,time)
     if not np.isfinite(lpr):
         # print('here prior')
         return -np.inf
@@ -98,10 +101,16 @@ if __name__ == '__main__':
     # time, flux, fluxerr = np.loadtxt('./LocalTests/BasicGP_lightcurve.txt').T
     
     lightcurve = np.loadtxt(lightdir+lightname).T
-    time, flux, fluxerr = lightcurve[0][::10], lightcurve[1][::10], lightcurve[2][::10]
+    
+    if min(lightcurve.shape)<3:
+        time, flux = lightcurve[0], lightcurve[1]
+        fluxerr = np.ones(len(time))*1e-4
+    else:    
+        time, flux, fluxerr = lightcurve[0][::10], lightcurve[1][::10], lightcurve[2][::10]
+
 
     filename = outdir+lightname[:-4]
-    
+
     # input_pars = np.loadtxt(lightdir+parfile)
     # lnjit = np.log(abs(np.mean(fluxerr)))
     num,mean,lnjit,amp,gamma,logPeriod,metric = np.loadtxt(lightdir+parfile)
@@ -114,17 +123,17 @@ if __name__ == '__main__':
 
     gp.compute(time, fluxerr)
 
-    print(input_gppars)    
+    print(input_gppars)
     print(gpinput_pars)
-    
-    
-    # input_pars = [lnjit, *gpinput_pars] 
-    
 
-        
+
+    # input_pars = [lnjit, *gpinput_pars]
+
+
+
     min_pars = minimize(neg_log_like_prior,gpinput_pars,args=(gp,time,flux,fluxerr))
     print('minimize pars', min_pars.x)
-  
+
 
         #
     ndim, nwalkers = len(min_pars.x), 80
@@ -137,7 +146,7 @@ if __name__ == '__main__':
 
     # sampler.run_mcmc(pos,800)
 
-    burn_steps = 50
+    burn_steps = 300
     # print("Running burn-in 1...")
     sampler.run_mcmc(pos, burn_steps)
     state = sampler.get_last_sample()
@@ -157,7 +166,7 @@ if __name__ == '__main__':
     pos3 = bestvals2 + np.random.randn(nwalkers, ndim)*1e-4
 
 
-    max_steps = 10000
+    max_steps = 8000
     index = 0
     autocorr = np.empty(max_steps)
     flag=1
@@ -223,7 +232,7 @@ if __name__ == '__main__':
 
     # fatsamples = sampler.get_chain(discard=burnin)
     # print(np.shape(fatsamples))
-    
+
     flat_samples = sampler.get_chain(discard=burnin, thin=thin, flat=True)
     samples = sampler.get_chain(discard=burnin,thin=thin)
     lnp = sampler.get_log_prob(discard=burnin,thin=thin)
