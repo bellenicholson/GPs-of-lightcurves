@@ -106,7 +106,7 @@ if __name__ == '__main__':
         time, flux = lightcurve[0], lightcurve[1]
         fluxerr = np.ones(len(time))*1e-4
     else:    
-        time, flux, fluxerr = lightcurve[0][::10], lightcurve[1][::10], lightcurve[2][::10]
+        time, flux, fluxerr = lightcurve[0][::], lightcurve[1][::], lightcurve[2][::]
 
 
     filename = outdir+lightname[:-4]
@@ -123,8 +123,8 @@ if __name__ == '__main__':
 
     gp.compute(time, fluxerr)
 
-    print(input_gppars)
-    print(gpinput_pars)
+    # print(input_gppars)
+    # print(gpinput_pars)
 
 
     # input_pars = [lnjit, *gpinput_pars]
@@ -132,7 +132,7 @@ if __name__ == '__main__':
 
 
     min_pars = minimize(neg_log_like_prior,gpinput_pars,args=(gp,time,flux,fluxerr))
-    print('minimize pars', min_pars.x)
+    # print('minimize pars', min_pars.x)
 
 
         #
@@ -195,47 +195,34 @@ if __name__ == '__main__':
     # last_state = sampler.get_last_sample()
     # print(last_state)
     # np.savetxt(filename+'_finalstate.txt',final_state)
+    # flag=1
+    # sampler = emcee.backends.HDFBackend('./LocalTestsLightcurveFromGP_1e0_360_run11.h5')
 
-    # sampler = emcee.backends.HDFBackend(filename+'_run11.h5')
-    # ndim = len(input_pars)
 
 
-    try:
+    if flag==0:
         tau = sampler.get_autocorr_time()
         burnin = int(2 * np.max(tau))
         thin = int(0.5 * np.min(tau))
-        # flag = 0
-    except:
-        # print('no autocorr')
-        thin = 1
-        burnin = 100
-        # flag = 1
 
-
-
-
-    # # samples = sampler.chain
-    # # lnp = sampler.lnprobability
-    # samples = sampler.chain[:, burnin:, :]
-    # flat_samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
-    # lnp = sampler.lnprobability[:, burnin:]
-    # # print(lnp.shape)
-    # # print(samples.shpae)
-    #
-    # corner.corner(flat_samples, labels=['Mean',r'$\log A$',r'$\Gamma_1$',r'$\log P$',r'$\log m$']);
-    # p.savefig(filename+'_run10_corner.png')
-    # p.close()
-    #
-    # walker_diagnostic_plot(samples,lnp,ndim)
-    # p.savefig(filename+'_run10_walkers.png')
-    # p.close()
-
-    # fatsamples = sampler.get_chain(discard=burnin)
-    # print(np.shape(fatsamples))
-
+        
+    else:
+        big_burn = 2000
+        try:
+            tau = sampler.get_autocorr_time(discard=big_burn)
+            burnin = int(2 * np.max(tau))
+            thin = int(0.5 * np.min(tau))
+        except:
+            flag=2
+            burnin  = big_burn
+            thin = 1 
+            
+        
+        
     flat_samples = sampler.get_chain(discard=burnin, thin=thin, flat=True)
     samples = sampler.get_chain(discard=burnin,thin=thin)
     lnp = sampler.get_log_prob(discard=burnin,thin=thin)
+
 
     corner.corner(flat_samples, labels=['Mean','Jitter',r'$\log A$',r'$\Gamma_1$',r'$\log P$',r'$\log m$']);
     p.savefig(filename+'_corner.png')
@@ -247,28 +234,6 @@ if __name__ == '__main__':
     p.close()
 
 
-    # filename = outdir+lightname
-    # walker_diagnostic_plot(samples2,lnp2,ndim)
-    # p.savefig(filename[:-4]+'_run6_walkers2.png')
-    # p.close()
-    #
-    #
-    #
-    # try:
-    #     tau = sampler.get_autocorr_time()
-    #     burnin = int(2 * np.max(tau))
-    # except:
-    #     burnin = 200
-    #     print('no autocorr')
-    #
-    #
-    # samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
-    #
-    #
-    #
-    # corner.corner(samples2, labels=['Mean',r'$\log A$',r'$\Gamma_1$',r'$\log P$',r'$\log m$']);
-    # p.savefig(filename[:-4]+'_run6_corner2.png')
-    # p.close()
 
 
     results = get_emcee_results(flat_samples,ndim,lam=False)
