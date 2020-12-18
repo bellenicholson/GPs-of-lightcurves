@@ -38,7 +38,7 @@ def walker_diagnostic_plot(samples,lnP,ndim):
     fig,axes=p.subplots(ndim+1,1,sharex=True,figsize=(12,2*(ndim+1)))
     axes[0].plot(lnP,alpha=0.5,lw=0.5)
     axes[0].set_ylabel(r'$\log Prob$')
-    labels=['Jitter','Mean',r'$\log A$',r'$\Gamma_1$',r'$\log P$',r'$\log m$']
+    labels=['Mean','Jitter',r'$\log A$',r'$\Gamma_1$',r'$\log P$',r'$\log m$']
     for i in range(ndim):
         axes[i+1].plot(samples[:,:,i],alpha=0.5,lw=0.5)
         axes[i+1].set_ylabel(labels[i])
@@ -112,6 +112,7 @@ if __name__ == '__main__':
     time, flux, rv = lightcurve[0], lightcurve[1], lightcurve[2]
     fluxerr = np.ones(len(time))*1e-4
 
+
     filename = outdir+lightname[:-4]
 
     # input_pars = np.loadtxt(lightdir+parfile)
@@ -132,9 +133,10 @@ if __name__ == '__main__':
 
     # input_pars = [lnjit, *gpinput_pars]
 
-
-
-    min_pars = minimize(neg_log_like_prior,gpinput_pars,args=(gp,time,flux,fluxerr))
+    #uncomment for light curves:
+    # min_pars = minimize(neg_log_like_prior,gpinput_pars,args=(gp,time,flux,fluxerr))
+    #uncomment for RVs:
+    min_pars = minimize(neg_log_like_prior,gpinput_pars,args=(gp,time,rv,fluxerr))
     # print('minimize pars', min_pars.x)
 
 
@@ -144,8 +146,11 @@ if __name__ == '__main__':
 
     # backend = emcee.backends.HDFBackend(filename+'_run19.h5')
     # backend.reset(nwalkers, ndim)
-
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_like_prior, args=[gp,time,flux,fluxerr])#,backend=backend)
+    
+    # uncomment for light curves:
+    # sampler = emcee.EnsembleSampler(nwalkers, ndim, log_like_prior, args=[gp,time,flux,fluxerr])#,backend=backend)
+    # uncomment for rv:
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_like_prior, args=[gp,time,rv,fluxerr])#,backend=backend)
 
     # sampler.run_mcmc(pos,800)
 
@@ -207,19 +212,18 @@ if __name__ == '__main__':
         tau = sampler.get_autocorr_time()
         burnin = int(2 * np.max(tau))
         thin = int(0.5 * np.min(tau))
-
         
     else:
         big_burn = 2000
         try:
             tau = sampler.get_autocorr_time(discard=big_burn)
-            burnin = int(2 * np.max(tau))
+            burnin = int(2 * np.max(tau)) + big_burn
             thin = int(0.5 * np.min(tau))
         except:
             flag=2
             burnin  = big_burn
             thin = 1 
-            
+
         
         
     flat_samples = sampler.get_chain(discard=burnin, thin=thin, flat=True)
