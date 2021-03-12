@@ -109,7 +109,7 @@ if __name__ == '__main__':
     #     time, flux, fluxerr = lightcurve[0][::], lightcurve[1][::], lightcurve[2][::]
 
 
-    time, flux, rv = lightcurve[0], lightcurve[1], lightcurve[2]
+    time, flux, rv = lightcurve[0][::10], lightcurve[1][::10], lightcurve[2][::10]
     fluxerr = np.ones(len(time))*1e-4
 
 
